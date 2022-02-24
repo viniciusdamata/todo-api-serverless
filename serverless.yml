@@ -99,3 +99,4 @@ functions:
                   Content-Type: "'application/json'"
 plugins:
   - serverless-esbuild
+  - serverless-offline

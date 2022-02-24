@@ -1,0 +1,101 @@
+service: todo-api
+
+frameworkVersion: "3"
+
+custom:
+  tableName: "todos-table-${sls:stage}"
+  esbuild:
+    bundle: true
+    minify: true
+    watch:
+      pattern: ['functions/**/*.ts'] # match only typescript files in src directory
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  memorySize: 128
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - { "Fn::GetAtt": ["todosTable", "Arn"] }
+  environment:
+    TODOS_TABLE: ${self:custom.tableName}
+resources:
+  Resources:
+    todosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: title
+            AttributeType: S
+        KeySchema:
+          - AttributeName: title
+            KeyType: HASH
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+
+functions:
+  saveTodo:
+    handler: ./functions/saveTodo/index.saveTodo
+    events:
+      - http:
+          path: save-todos
+          method: post
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: >
+                #set($inputRoot = $input.path('$'))
+                  {
+                        "title": "$inputRoot.title",
+                        "body": "$inputRoot.body",
+                        "archived": $inputRoot.archived,
+                        "backgroundColor":"$inputRoot.backgroundColor",
+                        "userId":"$inputRoot.userId"
+                  }
+          response:
+            headers:
+              Access-Control-Allow-Origin: "'*'"
+              Content-Type: "'application/json'"
+            template: >
+              #set($inputRoot = $input.path('$'))
+                {
+                    "error":$inputRoot.error,
+                    "body":$inputRoot.body,
+                    "statusCode":$inputRoot.statusCode
+                }
+            statusCodes:
+              200:
+                pattern: ""
+              400:
+                pattern: '.*"statusCode":400.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error" : $inputRoot.error,
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+              500:
+                pattern: '.*"statusCode":500.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error" : $inputRoot.error,
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+                headers:
+                  Content-Type: "'application/json'"
+plugins:
+  - serverless-esbuild

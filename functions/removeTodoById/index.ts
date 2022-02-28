@@ -22,6 +22,7 @@ export const removeTodoById = async ({
 }: RemoveTodoByIdBody): Promise<RemoveTodoByIdResponse> => {
   try {
     const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
+    const decodedTitle = decodeURIComponent(title);
 
     const dynamoDbOptions:
       | (DocumentClient.DocumentClientOptions &
@@ -40,7 +41,7 @@ export const removeTodoById = async ({
     }
     const params = {
       TableName: TODOS_TABLE,
-      Key: { title },
+      Key: { title: decodedTitle },
     };
 
     await dynamoDbClient.delete(params).promise();

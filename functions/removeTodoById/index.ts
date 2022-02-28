@@ -1,26 +1,25 @@
 "use strict";
 import AWS from "aws-sdk";
-import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
+import DynamoDB, {
+  DeleteItemInput,
+  DocumentClient,
+} from "aws-sdk/clients/dynamodb";
 
 const TODOS_TABLE = process.env.TODOS_TABLE;
 
-type SaveTodoBody = {
+type RemoveTodoByIdBody = {
   title: string;
-  body: string;
-  archived: boolean;
-  backgroundColor: string;
-  userId: string;
 };
 
-type SaveTodoResponse = {
+type RemoveTodoByIdResponse = {
   statusCode: number;
   body: string | null;
   error: string | null;
 };
 
-export const saveTodo = async (
-  event: SaveTodoBody
-): Promise<SaveTodoResponse> => {
+export const removeTodoById = async ({
+  title,
+}: RemoveTodoByIdBody): Promise<RemoveTodoByIdResponse> => {
   const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
 
   const dynamoDbOptions:
@@ -34,27 +33,21 @@ export const saveTodo = async (
     : undefined;
 
   const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
-  
+
   try {
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }
     const params = {
       TableName: TODOS_TABLE,
-      Item: {
-        title: event.title,
-        body: event.body,
-        archived: false,
-        backgroundColor: event.backgroundColor,
-        userId: event.userId,
-      },
+      Key: { title },
     };
 
-    await dynamoDbClient.put(params).promise();
+    await dynamoDbClient.delete(params).promise();
 
     return {
-      statusCode: 201,
-      body: "created",
+      statusCode: 200,
+      body: "ok",
       error: null,
     };
   } catch (err: any) {

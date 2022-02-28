@@ -8,7 +8,20 @@ custom:
     bundle: true
     minify: true
     watch:
-      pattern: ['functions/**/*.ts'] # match only typescript files in src directory
+      pattern: ["functions/**/*.ts"] # match only typescript files in src directory
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+  serverless-offline:
+    resourceRoutes: true
 
 provider:
   name: aws
@@ -48,7 +61,7 @@ functions:
     handler: ./functions/saveTodo/index.saveTodo
     events:
       - http:
-          path: save-todos
+          path: todos
           method: post
           cors: true
           integration: lambda
@@ -70,8 +83,8 @@ functions:
             template: >
               #set($inputRoot = $input.path('$'))
                 {
-                    "error":$inputRoot.error,
-                    "body":$inputRoot.body,
+                    "error":"$inputRoot.error",
+                    "body": "$inputRoot.body",
                     "statusCode":$inputRoot.statusCode
                 }
             statusCodes:
@@ -82,7 +95,7 @@ functions:
                 template: >
                   #set($inputRoot = $input.path('$'))
                     {
-                      "error" : $inputRoot.error,
+                      "error" : "$inputRoot.error",
                       "body":$inputRoot.body,
                       "statusCode":$inputRoot.statusCode
                     }
@@ -91,12 +104,172 @@ functions:
                 template: >
                   #set($inputRoot = $input.path('$'))
                     {
-                      "error" : $inputRoot.error,
+                      "error" : "$inputRoot.error",
                       "body":$inputRoot.body,
                       "statusCode":$inputRoot.statusCode
                     }
                 headers:
                   Content-Type: "'application/json'"
+
+  findTodoById:
+    handler: ./functions/findTodoById/index.findTodoById
+    events:
+      - http:
+          path: todos/{Title}
+          method: get
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: '{ "title" : "$input.params(''Title'')" }'
+          response:
+            headers:
+              Access-Control-Allow-Origin: "'*'"
+              Content-Type: "'application/json'"
+            template: >
+              #set($inputRoot = $input.path('$'))
+                {
+                    "error":"$inputRoot.error",
+                    "body": {
+                          "title":"$inputRoot.body.title",
+                          "body":"$inputRoot.body.body",
+                          "archived":$inputRoot.body.archived,
+                          "backgroundColor":"$inputRoot.body.backgroundColor",
+                          "userId":"$inputRoot.body.userId"
+                    },
+                    "statusCode":$inputRoot.statusCode
+                }
+            statusCodes:
+              200:
+                pattern: ""
+              400:
+                pattern: '.*"statusCode":400.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error":"$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+              500:
+                pattern: '.*"statusCode":500.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error":"$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+                headers:
+                  Content-Type: "'application/json'"
+
+  listTodos:
+    handler: ./functions/listTodos/index.listTodos
+    events:
+      - http:
+          path: todos
+          method: get
+          cors: true
+          integration: lambda
+          response:
+            headers:
+              Access-Control-Allow-Origin: "'*'"
+              Content-Type: "'application/json'"
+            template: >
+              #set($inputRoot = $input.path('$'))
+                {
+                    "error":"$inputRoot.error",
+                    "body": [
+                      #foreach($elem in $inputRoot.body) 
+                      {  
+                          "title":"$elem.title",
+                          "body":"$elem.body",
+                          "archived":$elem.archived,
+                          "backgroundColor":"$elem.backgroundColor",
+                          "userId":"$elem.userId"
+                      }
+                      #if($foreach.hasNext),#end
+                    #end
+                    ],
+                    "statusCode":$inputRoot.statusCode
+                }
+            statusCodes:
+              200:
+                pattern: ""
+              400:
+                pattern: '.*"statusCode":400.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error" : "$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+              500:
+                pattern: '.*"statusCode":500.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error": "$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+                headers:
+                  Content-Type: "'application/json'"
+
+  removeTodoById:
+    handler: ./functions/removeTodoById/index.removeTodoById
+    events:
+      - http:
+          path: todos/{Title}
+          method: delete
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: '{ "title" : "$input.params(''Title'')" }'
+          response:
+            headers:
+              Access-Control-Allow-Origin: "'*'"
+              Content-Type: "'application/json'"
+            template: >
+              #set($inputRoot = $input.path('$'))
+                {
+                    "error":"$inputRoot.error",
+                    "body": "$inputRoot.body",
+                    "statusCode":$inputRoot.statusCode
+                }
+            statusCodes:
+              200:
+                pattern: ""
+              400:
+                pattern: '.*"statusCode":400.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error" : "$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+              500:
+                pattern: '.*"statusCode":500.*'
+                template: >
+                  #set($inputRoot = $input.path('$'))
+                    {
+                      "error": "$inputRoot.error",
+                      "body":$inputRoot.body,
+                      "statusCode":$inputRoot.statusCode
+                    }
+                headers:
+                  Content-Type: "'application/json'"
+
 plugins:
+  - serverless-dynamodb-local
   - serverless-esbuild
   - serverless-offline
+package:
+  individually: true
+  exclude:
+    - node_modules/**
+    - package.json
+    - package-lock.json

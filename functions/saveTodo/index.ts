@@ -21,21 +21,21 @@ type SaveTodoResponse = {
 export const saveTodo = async (
   event: SaveTodoBody
 ): Promise<SaveTodoResponse> => {
-  const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
-
-  const dynamoDbOptions:
-    | (DocumentClient.DocumentClientOptions &
-        DynamoDB.Types.ClientConfiguration)
-    | undefined = IS_OFFLINE
-    ? {
-        endpoint: "http://localhost:8000",
-        region: "localhost",
-      }
-    : undefined;
-
-  const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
-  
   try {
+    const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
+
+    const dynamoDbOptions:
+      | (DocumentClient.DocumentClientOptions &
+          DynamoDB.Types.ClientConfiguration)
+      | undefined = IS_OFFLINE
+      ? {
+          endpoint: "http://localhost:8000",
+          region: "localhost",
+        }
+      : undefined;
+
+    const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
+
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }

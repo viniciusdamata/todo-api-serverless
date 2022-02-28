@@ -25,26 +25,27 @@ type FindTodoByIdResponse = {
 export const findTodoById = async ({
   title,
 }: FindTodoByIdBody): Promise<FindTodoByIdResponse> => {
-  const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
-
-  const dynamoDbOptions:
-    | (DocumentClient.DocumentClientOptions &
-        DynamoDB.Types.ClientConfiguration)
-    | undefined = IS_OFFLINE
-    ? {
-        endpoint: "http://localhost:8000",
-        region: "localhost",
-      }
-    : undefined;
-
-  const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
   try {
+    const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
+    const decodedTitle = decodeURIComponent(title);
+
+    const dynamoDbOptions:
+      | (DocumentClient.DocumentClientOptions &
+          DynamoDB.Types.ClientConfiguration)
+      | undefined = IS_OFFLINE
+      ? {
+          endpoint: "http://localhost:8000",
+          region: "localhost",
+        }
+      : undefined;
+
+    const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }
     const params: AWS.DynamoDB.DocumentClient.GetItemInput = {
       TableName: TODOS_TABLE,
-      Key: { title },
+      Key: { title: decodedTitle },
     };
 
     const { Item } = await dynamoDbClient.get(params).promise();

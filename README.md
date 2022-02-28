@@ -75,3 +75,5 @@ Which should result in response similar to the following:
 [Serverless dynamodb offline reference](https://www.serverless.com/plugins/serverless-dynamodb-local)
 [Build a Python REST API with Serverless, Lambda, and DynamoDB](https://www.serverless.com/blog/flask-python-rest-api-serverless-lambda-dynamodb/)
 [Serverless offline](https://www.serverless.com/plugins/serverless-offline)
+[Serverless docs](https://www.serverless.com/framework/docs/providers/aws)
+[deploy function](https://www.serverless.com/framework/docs/providers/aws/cli-reference/deploy-function)

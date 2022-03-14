@@ -4,7 +4,9 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 const TODOS_TABLE = process.env.TODOS_TABLE;
 
-type ListTodoBody = {};
+type ListTodoBody = {
+  archived: boolean;
+};
 
 type Todo = {
   title: string;
@@ -20,42 +22,47 @@ type ListTodoResponse = {
   error: string | null;
 };
 
-export const listTodos =
-  async ({}: ListTodoBody): Promise<ListTodoResponse> => {
-    try {
-      const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
+export const listTodos = async ({
+  archived = false,
+}: ListTodoBody): Promise<ListTodoResponse> => {
+  try {
+    const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
 
-      const dynamoDbOptions:
-        | (DocumentClient.DocumentClientOptions &
-            DynamoDB.Types.ClientConfiguration)
-        | undefined = IS_OFFLINE
-        ? {
-            endpoint: "http://localhost:8000",
-            region: "localhost",
-          }
-        : undefined;
+    const dynamoDbOptions:
+      | (DocumentClient.DocumentClientOptions &
+          DynamoDB.Types.ClientConfiguration)
+      | undefined = IS_OFFLINE
+      ? {
+          endpoint: "http://localhost:8000",
+          region: "localhost",
+        }
+      : undefined;
 
-      const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
-      if (!TODOS_TABLE) {
-        throw new Error("Provide todos table env");
-      }
-      const params: AWS.DynamoDB.DocumentClient.ScanInput = {
-        TableName: TODOS_TABLE,
-        Select: "ALL_ATTRIBUTES",
-      };
-
-      const { Items } = await dynamoDbClient.scan(params).promise();
-      console.log(Items);
-      return {
-        statusCode: 200,
-        body: Items as Todo[],
-        error: null,
-      };
-    } catch (err: any) {
-      return {
-        statusCode: 500,
-        body: null,
-        error: err.message,
-      };
+    const dynamoDbClient = new AWS.DynamoDB.DocumentClient(dynamoDbOptions);
+    if (!TODOS_TABLE) {
+      throw new Error("Provide todos table env");
     }
-  };
+    const params: AWS.DynamoDB.DocumentClient.ScanInput = {
+      TableName: TODOS_TABLE,
+      Select: "ALL_ATTRIBUTES",
+      FilterExpression: "archived = :isArchived",
+      ExpressionAttributeValues: {
+        isArchived: archived,
+      },
+    };
+
+    const { Items } = await dynamoDbClient.scan(params).promise();
+    console.log(Items);
+    return {
+      statusCode: 200,
+      body: Items as Todo[],
+      error: null,
+    };
+  } catch (err: any) {
+    return {
+      statusCode: 500,
+      body: null,
+      error: err.message,
+    };
+  }
+};

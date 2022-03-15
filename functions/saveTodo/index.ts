@@ -44,7 +44,7 @@ export const saveTodo = async (
       Item: {
         title: event.title,
         body: event.body,
-        archived: false,
+        archived:  event.archived || false,
         backgroundColor: event.backgroundColor,
         userId: event.userId,
       },

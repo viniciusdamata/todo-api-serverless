@@ -163,6 +163,9 @@ functions:
           method: get
           cors: true
           integration: lambda
+          request:
+            template:
+              application/json: '{ "archived" : $input.params(''archived'') }'
           response:
             headers:
               Access-Control-Allow-Origin: "'*'"

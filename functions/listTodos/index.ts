@@ -22,9 +22,11 @@ type ListTodoResponse = {
   error: string | null;
 };
 
-export const listTodos = async ({
-  archived = false,
-}: ListTodoBody): Promise<ListTodoResponse> => {
+export const listTodos = async (
+  { archived }: ListTodoBody = {
+    archived: false,
+  }
+): Promise<ListTodoResponse> => {
   try {
     const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
 
@@ -45,20 +47,20 @@ export const listTodos = async ({
     const params: AWS.DynamoDB.DocumentClient.ScanInput = {
       TableName: TODOS_TABLE,
       Select: "ALL_ATTRIBUTES",
-      FilterExpression: "archived = :isArchived",
+      FilterExpression: "archived=:archived",
       ExpressionAttributeValues: {
-        isArchived: archived,
+        ":archived": archived,
       },
     };
 
     const { Items } = await dynamoDbClient.scan(params).promise();
-    console.log(Items);
     return {
       statusCode: 200,
       body: Items as Todo[],
       error: null,
     };
   } catch (err: any) {
+    console.log(err);
     return {
       statusCode: 500,
       body: null,

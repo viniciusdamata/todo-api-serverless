@@ -7,7 +7,7 @@ custom:
   tableName: "todos-table-${sls:stage}"
   esbuild:
     bundle: true
-    minify: true
+    # minify: true
     watch:
       pattern: ["functions/**/*.ts"] # match only typescript files in src directory
   dynamodb:
@@ -45,7 +45,7 @@ provider:
     TODOS_TABLE: ${self:custom.tableName}
 resources:
   - ${file(resources/dynamodb-table.yml)}
-  # - ${file(resources/cognito-user-pool.yml)}
+  - ${file(resources/cognito-user-pool.yml)}
 
 functions:
   saveTodo:
@@ -56,6 +56,11 @@ functions:
           method: post
           cors: true
           integration: lambda
+          authorizer:
+            type: COGNITO_USER_POOLS
+            name: user-pool
+            arn: !GetAtt "CognitoUserPool.Arn"
+
           request:
             template:
               application/json: >
@@ -65,7 +70,7 @@ functions:
                         "body": "$inputRoot.body",
                         "archived": $inputRoot.archived,
                         "backgroundColor":"$inputRoot.backgroundColor",
-                        "userId":"$inputRoot.userId"
+                        "userId":"$context.authorizer.claims['cognito:username']"
                   }
           response:
             headers:
@@ -101,7 +106,6 @@ functions:
                     }
                 headers:
                   Content-Type: "'application/json'"
-      
 
   findTodoById:
     handler: ./functions/findTodoById/index.findTodoById
@@ -111,9 +115,17 @@ functions:
           method: get
           cors: true
           integration: lambda
+          authorizer:
+            type: COGNITO_USER_POOLS
+            name: user-pool
+            arn: !GetAtt "CognitoUserPool.Arn"
           request:
             template:
-              application/json: '{ "title" : "$input.params(''Title'')" }'
+              application/json: >
+                { 
+                  "title" : $input.params('title'),
+                  "userId": "$context.authorizer.claims['cognito:username']" 
+                }
           response:
             headers:
               Access-Control-Allow-Origin: "'*'"
@@ -163,9 +175,17 @@ functions:
           method: get
           cors: true
           integration: lambda
+          authorizer:
+            type: COGNITO_USER_POOLS
+            name: user-pool
+            arn: !GetAtt "CognitoUserPool.Arn"
           request:
             template:
-              application/json: '{ "archived" : $input.params(''archived'') }'
+              application/json: >
+                { 
+                  "archived" : $input.params('archived'),
+                  "userId":"$context.authorizer.claims['cognito:username']" 
+                }
           response:
             headers:
               Access-Control-Allow-Origin: "'*'"
@@ -220,9 +240,17 @@ functions:
           method: delete
           cors: true
           integration: lambda
+          authorizer:
+            type: COGNITO_USER_POOLS
+            name: user-pool
+            arn: !GetAtt "CognitoUserPool.Arn"
           request:
             template:
-              application/json: '{ "title" : "$input.params(''Title'')" }'
+              application/json: >
+                { 
+                  "title" : $input.params('title'),
+                  "userId":"$context.authorizer.claims['cognito:username']" 
+                }
           response:
             headers:
               Access-Control-Allow-Origin: "'*'"

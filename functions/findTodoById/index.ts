@@ -6,6 +6,7 @@ const TODOS_TABLE = process.env.TODOS_TABLE;
 
 type FindTodoByIdBody = {
   title: string;
+  userId: string;
 };
 
 type Todo = {
@@ -24,6 +25,7 @@ type FindTodoByIdResponse = {
 
 export const findTodoById = async ({
   title,
+  userId,
 }: FindTodoByIdBody): Promise<FindTodoByIdResponse> => {
   try {
     const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
@@ -43,12 +45,22 @@ export const findTodoById = async ({
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }
-    const params: AWS.DynamoDB.DocumentClient.GetItemInput = {
-      TableName: TODOS_TABLE,
-      Key: { title: decodedTitle },
-    };
 
-    const { Item } = await dynamoDbClient.get(params).promise();
+    const { Item } = await dynamoDbClient
+      .get({
+        TableName: TODOS_TABLE,
+        Key: { title: decodedTitle },
+      })
+      .promise();
+
+    if ((Item as Todo).userId !== userId) {
+      return {
+        statusCode: 401,
+        body: null,
+        error: "UnauthorizedError",
+      };
+    }
+
     return {
       statusCode: 200,
       body: Item as Todo,

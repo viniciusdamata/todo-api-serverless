@@ -6,6 +6,7 @@ const TODOS_TABLE = process.env.TODOS_TABLE;
 
 type ListTodoBody = {
   archived: boolean;
+  userId: string;
 };
 
 type Todo = {
@@ -22,11 +23,10 @@ type ListTodoResponse = {
   error: string | null;
 };
 
-export const listTodos = async (
-  { archived }: ListTodoBody = {
-    archived: false,
-  }
-): Promise<ListTodoResponse> => {
+export const listTodos = async ({
+  userId,
+  archived = false,
+}: ListTodoBody): Promise<ListTodoResponse> => {
   try {
     const IS_OFFLINE = process.env.IS_OFFLINE === "true" ? true : false;
 
@@ -44,16 +44,18 @@ export const listTodos = async (
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }
-    const params: AWS.DynamoDB.DocumentClient.ScanInput = {
-      TableName: TODOS_TABLE,
-      Select: "ALL_ATTRIBUTES",
-      FilterExpression: "archived=:archived",
-      ExpressionAttributeValues: {
-        ":archived": archived,
-      },
-    };
 
-    const { Items } = await dynamoDbClient.scan(params).promise();
+    const { Items } = await dynamoDbClient
+      .scan({
+        TableName: TODOS_TABLE,
+        Select: "ALL_ATTRIBUTES",
+        FilterExpression: "archived=:archived and userId=:userId",
+        ExpressionAttributeValues: {
+          ":archived": archived,
+          ":userId": userId,
+        },
+      })
+      .promise();
     return {
       statusCode: 200,
       body: Items as Todo[],

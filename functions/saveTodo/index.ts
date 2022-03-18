@@ -39,18 +39,19 @@ export const saveTodo = async (
     if (!TODOS_TABLE) {
       throw new Error("Provide todos table env");
     }
-    const params = {
-      TableName: TODOS_TABLE,
-      Item: {
-        title: event.title,
-        body: event.body,
-        archived:  event.archived || false,
-        backgroundColor: event.backgroundColor,
-        userId: event.userId,
-      },
-    };
 
-    await dynamoDbClient.put(params).promise();
+    await dynamoDbClient
+      .put({
+        TableName: TODOS_TABLE,
+        Item: {
+          title: event.title,
+          body: event.body,
+          archived: event.archived || false,
+          backgroundColor: event.backgroundColor,
+          userId: event.userId,
+        },
+      })
+      .promise();
 
     return {
       statusCode: 201,

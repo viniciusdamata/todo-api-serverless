@@ -44,12 +44,12 @@ provider:
   environment:
     TODOS_TABLE: ${self:custom.tableName}
 resources:
-  - ${file(resources/dynamodb-table.yml)}
-  - ${file(resources/cognito-user-pool.yml)}
+  - ${file(src/resources/dynamodb-table.yml)}
+  - ${file(src/resources/cognito-user-pool.yml)}
 
 functions:
   saveTodo:
-    handler: ./functions/saveTodo/index.saveTodo
+    handler: ./src/functions/saveTodo/index.saveTodo
     events:
       - http:
           path: todos
@@ -108,7 +108,7 @@ functions:
                   Content-Type: "'application/json'"
 
   findTodoById:
-    handler: ./functions/findTodoById/index.findTodoById
+    handler: ./src/functions/findTodoById/index.findTodoById
     events:
       - http:
           path: todos/{Title}
@@ -168,7 +168,7 @@ functions:
                   Content-Type: "'application/json'"
 
   listTodos:
-    handler: ./functions/listTodos/index.listTodos
+    handler: ./src/functions/listTodos/index.listTodos
     events:
       - http:
           path: todos
@@ -233,7 +233,7 @@ functions:
                   Content-Type: "'application/json'"
 
   removeTodoById:
-    handler: ./functions/removeTodoById/index.removeTodoById
+    handler: ./src/functions/removeTodoById/index.removeTodoById
     events:
       - http:
           path: todos/{Title}

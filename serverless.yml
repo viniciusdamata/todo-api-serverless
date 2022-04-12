@@ -9,7 +9,7 @@ custom:
     bundle: true
     minify: true
     watch:
-      pattern: ["functions/**/*.ts"] # match only typescript files in src directory
+      pattern: ["src/functions/**/*.ts"] # match only typescript files in src directory
   dynamodb:
     stages:
       - dev
